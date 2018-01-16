@@ -37,17 +37,29 @@ class Classes
 			$timer = $this->db->real_escape_string($_GET['timer']);
 			$this->EditClasses($id, $nome, $teacher, $max_students, $data, $timer);
 		}
+		elseif ($_GET["a"] == "insert-classes") {
+			$name = $this->db->real_escape_string($_GET['name']);
+			$teacher = $this->db->real_escape_string($_GET['teacher']);
+			$max_students = $this->db->real_escape_string($_GET['max_students']);
+			$data = $this->db->real_escape_string($_GET['data']);
+			$timer = $this->db->real_escape_string($_GET['timer']);
+			$this->InsertClasses($name, $teacher, $max_students, $data, $timer);
+		}
+		elseif ($_GET["a"] == "get-classes-byday") {
+			$data = $this->db->real_escape_string($_GET['data']);
+			$this->GetClassesByDate($data);
+		}
 	}
 
 	public function GetClasses()
 	{
 		$response["classes"] = array();		
-		if ($query = $this->db->query('SELECT d.id as id, d.name as nome_aula, a.nome as nome_stor, d.students as estudantes, d.max_students as maximo, d.data as data, d.timer as timer FROM classes d LEFT JOIN users a on a.id=d.teacher')) {
+		if ($query = $this->db->query('SELECT d.id as id, d.name as nome_aula, a.nome as nome_stor, d.max_students as maximo, d.data as data, d.timer as timer FROM classes d LEFT JOIN users a on a.id=d.teacher')) {
 			if (empty($query)) {
 				return null;
 			} else {
 				while ($row = $query->fetch_object()) {
-					$json[] = array("id" => $row->id, "classe_name" => $row->nome_aula, "teacher" => $row->nome_stor, "students" => $row->estudantes, "max_students" => $row->maximo
+					$json[] = array("id" => $row->id, "classe_name" => $row->nome_aula, "teacher" => $row->nome_stor, "max_students" => $row->maximo
 				, "data" => $row->data, "timer" => $row->timer);
 				}
 
@@ -117,6 +129,51 @@ class Classes
 				return false;
 			}
 			
+	}
+
+	public function InsertClasses($name, $teacher, $max_students, $data, $timer)
+	{
+		if ($query = $this->db->prepare('INSERT INTO classes (name, teacher, max_students, data, timer) VALUES (?,?,?,?,?)')) {
+				$query->bind_param("siiss", $name, ($this->GetID($teacher)['id']), $max_students, $data, $timer);
+				if ($query->execute()) {
+					$this->GetClasses();
+				} else {
+					echo "failed";
+				}
+			} else {
+				return false;
+			}
+	}
+
+	public function GetClassesByDate($data)
+	{
+		$response["classes"] = array();		
+		if ($query = $this->db->prepare('SELECT d.id as id, d.name as nome_aula, a.nome as nome_stor, a.id as id_stor, d.max_students as maximo, d.data as data, d.timer as timer FROM classes d LEFT JOIN users a on a.id=d.teacher WHERE d.data =?')) {
+			$query->bind_param("s",$data);
+			$query->execute();
+			$result = $query->get_result();
+			if (empty($result->num_rows)) {
+				return null;
+			} else {
+				while ($row = $result->fetch_object()) {
+					$json[] = array("id" => $row->id, "classe_name" => $row->nome_aula, "teacher" => $row->nome_stor, "id_stor" => $row->id_stor, "max_students" => $row->maximo
+				, "data" => $row->data, "timer" => $row->timer);
+				}
+
+				if(isset($json)){
+					array_push($response["classes"], $json);
+					$response['type'] = "classes";
+					echo json_encode($response);
+				}
+				else{
+					$response['classes'] = "empty";
+					$response['type'] = "classes";
+					echo json_encode($response);
+				}	
+			}
+		} else {
+			return false;
+		}
 	}
 }
 
