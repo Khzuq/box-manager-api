@@ -49,6 +49,61 @@ class Classes
 			$data = $this->db->real_escape_string($_GET['data']);
 			$this->GetClassesByDate($data);
 		}
+		elseif ($_GET["a"] == "entry-classes") {
+			$id_student = $this->db->real_escape_string($_GET['id_student']);
+			$id_classe = $this->db->real_escape_string($_GET['id_classe']);
+			$this->EntryClasses($id_student, $id_classe);
+		}
+		elseif ($_GET["a"] == "get-students-class") {
+			$id_classe = $this->db->real_escape_string($_GET['id_classe']);
+			$this->GetStudentsClass($id_classe);
+		}
+	}
+
+	public function EntryClasses($id_student, $id_classe)
+	{
+		if ($query = $this->db->prepare('INSERT INTO classes_checkin (id_classes, id_users) VALUES (?,?)')) {
+			$query->bind_param("ii", $id_classe, $id_student);
+			if ($query->execute()) {
+				$this->GetClasses();
+			} else {
+				echo "failed";
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public function GetStudentsClass($id_classe)
+	{	
+		$response["students-to-class"] = array();
+		if ($query =  $this->db->prepare('SELECT users.nome FROM classes_checkin join users on classes_checkin.id_users = users.id and classes_checkin.id_classes=?')) {
+			$query->bind_param("i",$id_classe);
+			$query->execute();
+			$result = $query->get_result();
+			if (!empty($result->num_rows)) {
+				while ($row = $result->fetch_object()) {
+					$json[] = array("nome" => $row->nome);
+				}	
+				if(isset($json)){
+					array_push($response["students-to-class"], $json);
+					$response['type'] = "students-to-class";
+					echo json_encode($response);
+				}
+				else{
+					$response['students-to-class'] = "empty";
+					$response['type'] = "students-to-class";
+					echo json_encode($response);
+				}				
+			
+			} else {
+				$response['students-to-class'] = "empty";
+				$response['type'] = "students-to-class";
+				echo json_encode($response);
+			}
+		} else {
+			return false;
+		}
 	}
 
 	public function GetClasses()
@@ -134,15 +189,15 @@ class Classes
 	public function InsertClasses($name, $teacher, $max_students, $data, $timer)
 	{
 		if ($query = $this->db->prepare('INSERT INTO classes (name, teacher, max_students, data, timer) VALUES (?,?,?,?,?)')) {
-				$query->bind_param("siiss", $name, ($this->GetID($teacher)['id']), $max_students, $data, $timer);
-				if ($query->execute()) {
-					$this->GetClasses();
-				} else {
-					echo "failed";
-				}
+			$query->bind_param("siiss", $name, ($this->GetID($teacher)['id']), $max_students, $data, $timer);
+			if ($query->execute()) {
+				$this->GetClasses();
 			} else {
-				return false;
+				echo "failed";
 			}
+		} else {
+			return false;
+		}
 	}
 
 	public function GetClassesByDate($data)

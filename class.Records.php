@@ -22,7 +22,8 @@ class Records
 	public function Actions()
 	{
 		if ($_GET["a"] == "get-records") {
-			$this->GetRecords();
+			$id = $this->db->real_escape_string($_GET['id_user']);
+			$this->GetRecords($id);
 		} else if ($_GET["a"] == "delete-records") {
 			$id = $this->db->real_escape_string($_GET['id']);
 			$this->DeleteRecords($id);
@@ -41,14 +42,18 @@ class Records
 		}
 	}
 
-	public function GetRecords()
+	public function GetRecords($id)
 	{
 		$response["records"] = array();
-		if ($query = $this->db->query('SELECT records.id, modalities.name as modality_name, peso, id_students, data FROM records LEFT JOIN modalities ON records.id_modalities = modalities.id')) {
-			if (empty($query)) {
+		if ($query = $this->db->prepare('SELECT records.id, modalities.name as modality_name, peso, id_students, data FROM records LEFT JOIN modalities ON records.id_modalities = modalities.id WHERE id_students = ?')) {
+			$query->bind_param("i",$id);
+			$query->execute();
+			$result = $query->get_result();
+			//
+			if (empty($result->num_rows)) {
 				return null;
 			} else {
-				while ($row = $query->fetch_object()) {
+				while ($row = $result->fetch_object()) {
 					$json[] = array("id" => $row->id, "modality" => $row->modality_name, "weight" => $row->peso, "student" => $row->id_students, "date" => $row->data);
 				}
 				
