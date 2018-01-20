@@ -26,13 +26,15 @@ class Records
 			$this->GetRecords($id);
 		} else if ($_GET["a"] == "delete-records") {
 			$id = $this->db->real_escape_string($_GET['id']);
-			$this->DeleteRecords($id);
+			$id_user = $this->db->real_escape_string($_GET['id_user']);
+			$this->DeleteRecords($id, $id_user);
 		} elseif ($_GET["a"] == "edit-records") {
 			$id = $this->db->real_escape_string($_GET['id']);
+			$id_user = $this->db->real_escape_string($_GET['id_user']);
 			$data = $this->db->real_escape_string($_GET['data']);
 			$peso = $this->db->real_escape_string($_GET['peso']);
 			$modalidade = $this->db->real_escape_string($_GET['modalidade']);
-			$this->EditRecords($id, $data, $peso, $modalidade);
+			$this->EditRecords($id, $data, $peso, $modalidade, $id_user);
 		} elseif ($_GET["a"] == "insert-records") {
 			$id_user = $this->db->real_escape_string($_GET['id_user']);
 			$data = $this->db->real_escape_string($_GET['data']);
@@ -73,12 +75,12 @@ class Records
 		}
 	}
 
-	public function DeleteRecords($id)
+	public function DeleteRecords($id, $id_user)
 	{
 		if ($query = $this->db->prepare('DELETE FROM records where id=?')) {
 				$query->bind_param("i", $id);
 			if ($query->execute()) {
-				$this->GetRecords();
+				$this->GetRecords($id_user);
 			} else {
 				echo "failed";
 			}
@@ -87,11 +89,11 @@ class Records
 		}
 	}
 
-	public function EditRecords($id, $data, $peso, $modalidade){
+	public function EditRecords($id, $data, $peso, $modalidade, $id_user){
 		if ($query = $this->db->prepare('UPDATE records set data=?, peso=?, id_modalities=? where id=?')) {
 			$query->bind_param("siii", $data, $peso, ($this->GetID($modalidade)['id']), $id);
 			if ($query->execute()) {
-				$this->GetRecords();
+				$this->GetRecords($id_user);
 				//echo "done";
 			} else {
 				echo "failed";
@@ -106,7 +108,7 @@ class Records
 		if ($query = $this->db->prepare('INSERT INTO records (id_modalities, peso, id_students, data) VALUES (?,?,?,?)')) {
 				$query->bind_param("iiis", ($this->GetID($modalidade)['id']), $peso, $id_user, $data);
 				if ($query->execute()) {
-					$this->GetRecords();
+					$this->GetRecords($id_user);
 				} else {
 					echo "failed";
 				}
